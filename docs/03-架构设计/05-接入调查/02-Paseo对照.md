@@ -49,5 +49,5 @@ Paseo 是一个本机 agent 工作台/daemon 项目：agent provider 在 daemon 
 
 - 技术方向仍为 React + Vite、Fastify、SQLite，本报告不会改动该选择。
 - 默认协作由 coordinator 负责定向传递最小 handoff packet，避免在 agent 之间盲目共享 transcript；拒绝将“看到其他agent所有消息”作为默认行为。
-- 文件授权遵循项目 `AGENTS.md` 与用户任务批准。是否使用隔离 worktree 需由任务目录和并发冲突决定，而不是因为 Paseo 支持就强制。
+- 文件授权遵循项目 `AGENT.md` 与用户任务批准。是否使用隔离 worktree 需由任务目录和并发冲突决定，而不是因为 Paseo 支持就强制。
 - 当前仅研究官网 docs 与官方公开仓库，不复制源代码；如果未来决定复用代码，需单独检查具体 release 的 LICENSE、NOTICE、copyright、依赖与合规策略。

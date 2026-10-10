@@ -1,45 +1,61 @@
-# 多智能体协作工作台
+# 多智能体协作工作台（Agent Operations Manager）
 
-## 项目目标
+面向**个人本机使用**的网页工作台：发布通用任务，按任务选择参与者（内置模拟参与者，或需显式选择的本机 Codex 只读参与者），以协调者分工或多轮讨论的方式协作。过程可视化，产物可审阅，参与者只拿到精选简报与裁剪摘录。
 
-建设一个面向个人本机使用的网页工作台，让用户发布通用需求，并按任务选择可配置的智能体参与讨论与分工。通过清晰拆解、过程可视化、交叉检查和精选共享记忆提高任务质量，同时避免无差别共享完整上下文。
+**当前阶段**：第 0–4 期已实现；第 3、4 期已提交至 `feat/agent-operations-manager`，待用户浏览器验收。第 5 期（提示词、上下文与记忆）未批准。
 
-## 产品方向
+## 快速开始
 
-- 首版面向个人本机与单用户；不作为公网 SaaS 或多租户服务。
-- 目标技术栈：TypeScript、React + Vite、Fastify、SQLite。
-- 智能体接入保持可扩展；Codex、Hermes、DSH 仍是候选，不代表已集成。
-- 目标协作模式包括协调者分工和多轮讨论；共享精选简报与按需证据。
+环境：Node.js 24+、pnpm 12+。
 
-## 当前状态（2026-10-10）
+```bash
+pnpm install
+pnpm dev            # 界面 http://127.0.0.1:5173 ；API http://127.0.0.1:4317
+```
 
-**第 0、1 期已完成；第 2 期底座实现与自动化验收已完成。**当前包含本机 React/Vite 前端、Fastify 服务、SQLite 元数据自检与健康状态界面。范围、安全和数据边界见 [`docs/PHASE-2-DECISIONS.md`](docs/PHASE-2-DECISIONS.md)，自动检查及剩余未验证事项见 [`docs/ROADMAP.md`](docs/ROADMAP.md)。本期没有 agent 连接器、任务编排、任务正文/对话持久化或受控文件写入；浏览器本人验收仍未进行。
+完整命令、环境变量与数据库位置见 [`docs/04-开发运维/01-环境搭建与运行.md`](docs/04-开发运维/01-环境搭建与运行.md)。
 
-第 1 期是只读接入调查，不是连接器批准。Codex CLI 与 DSH Headless 是待评估候选；Hermes one-shot 有绕过交互审批风险；DSH `127.0.0.1:3080` 是 Web UI 而非已确认 Agent API。证据见 [`docs/INTEGRATION-RESEARCH.md`](docs/INTEGRATION-RESEARCH.md)，Paseo 对照见 [`docs/PASEO-COMPARISON.md`](docs/PASEO-COMPARISON.md)。Jet / RelayBoard 视觉参考和实际提示词来源目录尚待提供。
+## 常用命令
 
-## 阶段协作
+```bash
+pnpm typecheck      # 类型检查（先编译共享库）
+pnpm build          # 生产构建
+pnpm test           # 服务端测试（40 项，全部使用模拟适配器或替身脚本）
+pnpm start          # 生产运行（需先 build）
+```
 
-每期完成后汇报交付物、检查结果、未决问题与风险，然后等待用户明确批准下一期。路线图见 [`docs/ROADMAP.md`](docs/ROADMAP.md)。第 3 期仍须另行批准。
+## 目录一览
 
-## 目录
+| 目录 | 作用 |
+|---|---|
+| `AGENT.md` | 约束事实源（工程约定与 AI 协作） |
+| `apps/server/` | 本机服务、调度引擎、SQLite、任务 API |
+| `apps/web/` | 界面：总览、任务空间、新建任务、讨论室 |
+| `packages/shared/` | 共享契约（类型与常量） |
+| `packages/agent-adapters/` | 智能体适配器：`mock`、`codex-cli` |
+| `docs/` | 设计、计划、运维与开发记录 |
 
-- `apps/web/`：本机 React/Vite 界面
-- `apps/server/`：Fastify 本机服务、SQLite 初始化与健康检查
-- `packages/shared/`：后续共享契约
-- `packages/agent-adapters/`：后续智能体适配器
-- `prompts/`：后续版本化系统/角色提示词
-- `tests/`：后续跨应用测试；第 2 期测试在 `apps/server/test/`
-- `docs/`：路线、架构、决策、调查与阶段实施基线
+## 文档入口
 
-## 本机运行
+- [约束事实源（AGENT.md）](AGENT.md)
+- [文档中心](docs/README.md)
+- [开发进度](docs/02-项目计划/00-开发进度.md)
+- [系统总览](docs/00-系统总览.md) ｜ [系统架构概述](docs/03-架构设计/00-系统架构概述.md)
+- [分期路线图](docs/02-项目计划/01-分期路线图.md) ｜ [决策记录](docs/02-项目计划/02-决策记录.md)
+- [实现事实清单](docs/03-架构设计/03-实现事实清单.md)（编码时以它为准）
 
-环境：Node.js 24 或更高版本、pnpm 12 或兼容版本。
+## 分支约定
 
-- 安装依赖：`pnpm install`
-- 启动开发环境：`pnpm dev`（界面 `http://127.0.0.1:5173`，API `http://127.0.0.1:4317`）
-- 类型检查、构建与测试：`pnpm typecheck`、`pnpm build`、`pnpm test`
-- 生产运行：先 `pnpm build`，再 `pnpm start`，浏览器打开 `http://127.0.0.1:4317`
-- 停止开发/生产服务：在运行终端按 Ctrl+C。当前 Windows Node 进程不依赖 SIGTERM graceful handling。
-- 默认数据库路径为 Windows `%LOCALAPPDATA%\AgentOperationsManager\agent-operations-manager.sqlite`；可用 `AOM_DATA_DIR` 指定目录或 `AOM_DATABASE_PATH` 指定文件。
+```text
+main                              # 早期提交所在分支（bde7c34、be06b01）
+feat/agent-operations-manager     # 当前开发分支（自 main 切出，名称待用户确认）
+```
 
-`node:sqlite` 为 Node.js 内置 SQLite API，仍需关注其实验性状态与后续版本变化。最终运行状态以实际构建和检查结果为准。
+完整规则见 [`docs/02-项目计划/04-Git协作规范.md`](docs/02-项目计划/04-Git协作规范.md)。
+
+## 安全红线
+
+- 服务仅绑定 `127.0.0.1`；不提供用户认证，不得未经批准暴露到局域网或公网。
+- 凭据不入库也不入 Git；本项目不读取上游 CLI 的凭据文件。
+- 数据库文件、运行产物与 Codex 工作目录不入 Git。
+- 日志不记录提示词正文、模型输出或凭据。

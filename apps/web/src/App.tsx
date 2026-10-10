@@ -1,12 +1,25 @@
 import { useEffect, useState } from "react";
 import { getHealth, type HealthResponse } from "./api.js";
+import { useRoute, type Route } from "./route.js";
+import { TaskSpace } from "./tasks/TaskSpace.js";
 
 function BrandMark() {
   return <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>;
 }
 function Dot({ good }: { good: boolean }) { return <span className={`dot ${good ? "good" : "bad"}`} aria-hidden="true" />; }
 
+function Breadcrumb({ route }: { route: Route }) {
+  if (route.page === "new-task") {
+    return <div>工作区 <i>/</i> <a href="#tasks">任务空间</a> <i>/</i> <strong>新建任务</strong></div>;
+  }
+  if (route.page === "task") {
+    return <div>工作区 <i>/</i> <a href="#tasks">任务空间</a> <i>/</i> <strong>讨论室</strong></div>;
+  }
+  return <div>工作区 <i>/</i> <strong>任务空间</strong></div>;
+}
+
 export default function App() {
+  const route = useRoute();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkedAt, setCheckedAt] = useState<Date | null>(null);
@@ -30,13 +43,32 @@ export default function App() {
 
   const ready = health?.status === "ready" && health.storageStatus === "ready";
   const stamp = checkedAt?.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const overview = route.page === "overview";
+
+  const sidebar = <aside className="sidebar">
+    <a className="brand" href="#overview" aria-label="Agent Desk 首页"><BrandMark /><span><strong>agent desk</strong><small>LOCAL WORKSPACE</small></span></a>
+    <div className="nav-label">工作区</div>
+    <nav aria-label="主导航">
+      <a className={`nav${overview ? " active" : ""}`} href="#overview" aria-current={overview ? "page" : undefined}><b>▦</b>总览<span>↗</span></a>
+      <a className={`nav${overview ? "" : " active"}`} href="#tasks" aria-current={overview ? undefined : "page"}><b>◎</b>任务空间<span>↗</span></a>
+    </nav>
+    <div className="sidebar-bottom"><div className="local-box"><span className="home-icon">⌂</span><span><strong>仅在本机运行</strong><small>数据保存在此设备</small></span><Dot good={ready} /></div><p>AGENT OPERATIONS MANAGER · 0.1</p></div>
+  </aside>;
+
+  if (!overview) {
+    return <div className="shell">
+      {sidebar}
+      <main className="task-main">
+        <header className="topbar"><Breadcrumb route={route} /><span className="instance"><i />本地实例 <b>A</b></span></header>
+        <div className="content task-content">
+          <TaskSpace route={route} />
+        </div>
+      </main>
+    </div>;
+  }
+
   return <div className="shell">
-    <aside className="sidebar">
-      <a className="brand" href="#overview" aria-label="Agent Desk 首页"><BrandMark /><span><strong>agent desk</strong><small>LOCAL WORKSPACE</small></span></a>
-      <div className="nav-label">工作区</div>
-      <nav aria-label="主导航"><a className="nav active" href="#overview" aria-current="page"><b>▦</b>总览<span>↗</span></a><div className="nav disabled"><b>◎</b>任务空间<small>后续</small></div><div className="nav disabled"><b>⌁</b>运行时间线<small>后续</small></div></nav>
-      <div className="sidebar-bottom"><div className="local-box"><span className="home-icon">⌂</span><span><strong>仅在本机运行</strong><small>数据保存在此设备</small></span><Dot good={ready} /></div><p>AGENT OPERATIONS MANAGER · 0.1</p></div>
-    </aside>
+    {sidebar}
     <main id="overview">
       <header className="topbar"><div>工作区 <i>/</i> <strong>总览</strong></div><span className="instance"><i />本地实例 <b>A</b></span></header>
       <div className="content">

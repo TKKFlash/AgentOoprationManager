@@ -115,6 +115,12 @@ importers:
 
   apps/server:
     dependencies:
+      '@aom/agent-adapters':
+        specifier: workspace:*
+        version: link:../../packages/agent-adapters
+      '@aom/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@fastify/static':
         specifier: ^10.1.6
         version: 10.1.6
@@ -134,6 +140,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@aom/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@vitejs/plugin-react':
         specifier: ^6.1.2
         version: 6.1.2(vite@8.3.4(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15))
@@ -153,6 +162,25 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.2
         version: 19.3.0(@types/react@19.3.0)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/agent-adapters:
+    dependencies:
+      '@aom/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.1
+        version: 24.19.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/shared:
+    devDependencies:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

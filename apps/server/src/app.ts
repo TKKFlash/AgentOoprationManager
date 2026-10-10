@@ -1,9 +1,13 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import fastify, { LogController, type FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
 import { DATABASE_SCHEMA_VERSION, defaultDatabasePath, openDatabase } from "./database.js";
+import { Orchestrator } from "./orchestrator.js";
+import { BUILT_IN_PROFILES, codexScratchDirectoryFor, createAdapters } from "./profiles.js";
+import { TaskRepository } from "./repository.js";
+import { registerTaskRoutes } from "./task-routes.js";
 
 export interface AppOptions { databasePath?: string; logger?: boolean; development?: boolean }
 const WEB_DIST = resolve(dirname(fileURLToPath(import.meta.url)), "../../web/dist");
@@ -11,13 +15,30 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
   const port = Number(process.env.PORT ?? 4317);
-  const database = openDatabase(options.databasePath ?? defaultDatabasePath());
+  const databasePath = options.databasePath ?? defaultDatabasePath();
+  const database = openDatabase(databasePath);
   const app = fastify({
     logger: options.logger ?? true,
     logController: new LogController({ disableRequestLogging: true }),
     trustProxy: false,
   });
-  app.addHook("onClose", async () => database.close());
+
+  const scratchDirectory = codexScratchDirectoryFor(databasePath);
+  mkdirSync(scratchDirectory, { recursive: true });
+  const orchestrator = new Orchestrator({
+    repository: new TaskRepository(database.raw),
+    profiles: BUILT_IN_PROFILES,
+    adapters: createAdapters(scratchDirectory),
+    log: app.log,
+  });
+  const recovered = orchestrator.recoverInterrupted();
+  if (recovered > 0) app.log.info({ recovered }, "Marked interrupted tasks as failed");
+
+  // 先停止运行中的任务并等待其写入终态，再关闭数据库。
+  app.addHook("onClose", async () => {
+    await orchestrator.shutdown();
+    database.close();
+  });
 
   app.addHook("onRequest", async (request, reply) => {
     const address = app.server.address();
@@ -50,6 +71,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
       return reply.code(503).send({ status: "not_ready", storage: "sqlite", storageStatus: "error" });
     }
   });
+  registerTaskRoutes(app, orchestrator);
   if (existsSync(WEB_DIST)) await app.register(fastifyStatic, { root: WEB_DIST, prefix: "/", maxAge: 0, cacheControl: false });
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({ error: "Not found" }));
   app.setErrorHandler((error, _request, reply) => {
