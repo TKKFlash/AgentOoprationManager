@@ -1,0 +1,19 @@
+{
+  "name": "agent-operations-manager",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c cyan,magenta \"pnpm --filter @aom/server dev\" \"pnpm --filter @aom/web dev\"",
+    "build": "pnpm --filter @aom/server build && pnpm --filter @aom/web build",
+    "typecheck": "pnpm --filter @aom/server typecheck && pnpm --filter @aom/web typecheck",
+    "test": "pnpm --filter @aom/server test",
+    "start": "pnpm --filter @aom/server start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

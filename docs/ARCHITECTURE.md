@@ -49,9 +49,16 @@
 - 默认不启用无终止条件的 agent-to-agent mesh；需另行论证上下文预算、失败恢复、权限和停止条件。
 - Paseo 的具体对照与来源见 [`PASEO-COMPARISON.md`](PASEO-COMPARISON.md)。只借鉴公开架构与流程，不复用未确认协议或依赖；保持既定技术栈。
 
+## 第 2 期实际底座（2026-10-10）
+
+- Web 使用 React + Vite，Fastify 提供本机服务，SQLite 使用 Node.js 24 内置 `node:sqlite`，不增加原生数据库依赖。该 SQLite API 仍属实验性，后续版本需复核。
+- 开发服务分别绑定 `127.0.0.1:5173`（Vite）和 `127.0.0.1:4317`（Fastify）；生产由 Fastify 同时提供前端构建产物与 API。
+- API 校验 Host 精确匹配 `127.0.0.1:<当前端口>`；非安全方法要求 Origin 与服务来源完全匹配，开发期另允许 `http://127.0.0.1:5173`。Loopback 不构成身份验证，也不能防范所有本机恶意进程。
+- 默认 SQLite 路径为 `%LOCALAPPDATA%\AgentOperationsManager\agent-operations-manager.sqlite`；可通过 `AOM_DATA_DIR` 或 `AOM_DATABASE_PATH` 显式调整。当前仅保存 schema 版本与启动时间元数据。
+- 健康检查、安全来源校验、静态页面服务、SQLite 初始化及启动过程已自动化验证；浏览器人工验收未进行。
 ## 本机安全与任务版本边界
 
-- 服务默认仅面向本机并绑定 loopback；实际监听/来源校验/浏览器请求防护需在应用底座阶段测试。Loopback 不等于鉴权、CSRF 或 DNS rebinding 防护。
+- 服务默认仅面向本机并绑定 loopback；第 2 期已实现 Host/Origin 校验和安全响应头，但尚不提供用户认证，亦未验证抵御所有 DNS rebinding 或本机恶意进程威胁。
 - agent 只能使用已核验并授权的连接能力。默认只读；用户明确授权后才允许在限定目录与动作范围内写入；删除、覆盖、越权和外部系统写入须依全局/项目规则取得确认。
 - 子进程命令、工具集、cwd、路径和密钥传递均需最小化。adapter 能力或 UI 提示本身不是 OS 沙箱。
 - 每个任务开始时固定 agent 配置、提示词、权限策略和上下文快照；更新只对新任务生效。
