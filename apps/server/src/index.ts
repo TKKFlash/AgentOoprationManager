@@ -26,7 +26,8 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
       await app.listen({ host, port });
       app.log.info({ url: `http://${host}:${port}` }, "Local service ready");
     } catch (error) {
-      app.log.error({ errorName: error instanceof Error ? error.name : "UnknownError" }, "Local service failed to start");
+      // 错误码（如 EADDRINUSE 表示端口已被其它进程占用）不含敏感内容，便于定位启动失败的原因。
+      app.log.error({ errorName: error instanceof Error ? error.name : "UnknownError", errorCode: (error as NodeJS.ErrnoException).code }, "Local service failed to start");
       await app.close().catch((closeError) => {
         app.log.error({ errorName: closeError instanceof Error ? closeError.name : "UnknownError" }, "Service cleanup failed");
       });

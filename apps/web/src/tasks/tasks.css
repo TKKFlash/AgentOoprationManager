@@ -1,5 +1,5 @@
 /* 任务空间样式。沿用 styles.css 中的设计变量，不内联样式，兼容 CSP。 */
-.task-main { min-height: 100vh; margin-left: 244px; }
+/* 外层 main 的宽度与侧栏由 styles.css 的响应式规则统一控制，此处不再覆盖。 */
 .task-content { max-width: 1120px; }
 .task-panel, .task-room { display: grid; gap: 18px; }
 .task-panel-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
