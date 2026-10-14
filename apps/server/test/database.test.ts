@@ -5,12 +5,13 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import { DatabaseSync } from "node:sqlite";
 import { DATABASE_SCHEMA_VERSION, defaultDatabasePath, openDatabase } from "../src/database.js";
+import { createDraftV2Database } from "./fixtures/draft-database.js";
 
 describe("SQLite foundation", () => {
   it("initializes schema metadata and passes a read/write readiness check", () => {
     const database = openDatabase(":memory:");
     assert.doesNotThrow(() => database.checkReady());
-    assert.equal(DATABASE_SCHEMA_VERSION, 2);
+    assert.equal(DATABASE_SCHEMA_VERSION, 3);
     database.close();
   });
 
@@ -45,6 +46,28 @@ describe("SQLite foundation", () => {
         assert.notEqual(startedAt?.value, "2026-10-09T00:00:00.000Z", "startup time should be refreshed");
       } finally {
         upgraded.close();
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("repairs a v2 draft database whose steps table lacks output_body and note", () => {
+    const dir = mkdtempSync(join(tmpdir(), "aom-draft-"));
+    const path = join(dir, "draft.sqlite");
+    try {
+      createDraftV2Database(path);
+      const repaired = openDatabase(path);
+      try {
+        const columns = repaired.raw.prepare("PRAGMA table_info(steps)").all().map((column) => String(column.name));
+        assert.ok(columns.includes("output_body") && columns.includes("note"), "missing columns were added");
+        assert.ok(columns.includes("output_summary"), "existing draft columns are kept");
+        const indexes = repaired.raw.prepare("PRAGMA index_list(steps)").all();
+        assert.equal(indexes.find((index) => index.name === "steps_task_ordinal")?.unique, 1, "ordinal index is unique");
+        const version = repaired.raw.prepare("SELECT value FROM app_meta WHERE key = 'schema_version'").get();
+        assert.equal(version?.value, "3");
+      } finally {
+        repaired.close();
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

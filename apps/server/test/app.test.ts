@@ -22,7 +22,7 @@ describe("local service foundation", () => {
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("content-security-policy")?.includes("frame-ancestors 'none'"), true);
     assert.deepEqual(await response.json(), {
-      status: "ready", service: "agent-operations-manager", storage: "sqlite", storageStatus: "ready", schemaVersion: 2,
+      status: "ready", service: "agent-operations-manager", storage: "sqlite", storageStatus: "ready", schemaVersion: 3,
     });
   });
   it("rejects non-loopback host headers", async () => {

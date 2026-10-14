@@ -7,8 +7,10 @@ import { DatabaseSync } from "node:sqlite";
  *
  * v1：仅 app_meta（schema 版本与启动时间）。
  * v2：任务、步骤、产物与事件表（第 3、4 期）。
+ * v3：补齐 steps.output_body、steps.note 并对齐索引。开发期的 v2 草稿曾在本机建出缺少这两列的
+ *     steps 表，写入步骤时报 “no column named output_body”。已应用的迁移不得修改，因此以新版本修复。
  */
-export const DATABASE_SCHEMA_VERSION = 2;
+export const DATABASE_SCHEMA_VERSION = 3;
 
 export interface AppDatabase {
   checkReady(): void;
@@ -29,6 +31,17 @@ export function defaultDatabasePath(): string {
   const xdgData = process.env.XDG_DATA_HOME;
   if (xdgData) return resolve(xdgData, "agent-operations-manager", "agent-operations-manager.sqlite");
   return resolve(process.env.HOME ?? process.cwd(), ".local", "share", "agent-operations-manager", "agent-operations-manager.sqlite");
+}
+
+/**
+ * 为已存在的表补齐缺失的列。只追加：不改动已有列与数据。
+ * 表名、列名与定义均来自代码常量，不接受外部输入。
+ */
+function addMissingColumns(database: DatabaseSync, table: string, columns: readonly (readonly [string, string])[]): void {
+  const existing = new Set((database.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((column) => column.name));
+  for (const [name, definition] of columns) {
+    if (!existing.has(name)) database.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition};`);
+  }
 }
 
 /**
@@ -98,6 +111,18 @@ const MIGRATIONS: readonly { version: number; apply: (database: DatabaseSync) =>
           detail_json TEXT
         ) STRICT;
         CREATE UNIQUE INDEX IF NOT EXISTS events_task_seq ON events(task_id, seq);
+      `);
+    },
+  },
+  {
+    version: 3,
+    apply: (database) => {
+      addMissingColumns(database, "steps", [["output_body", "TEXT"], ["note", "TEXT"]]);
+      // 草稿中 steps_task_ordinal 为普通索引、tasks_created 缺失；这里对齐为最终定义。
+      database.exec(`
+        DROP INDEX IF EXISTS steps_task_ordinal;
+        CREATE UNIQUE INDEX IF NOT EXISTS steps_task_ordinal ON steps(task_id, ordinal);
+        CREATE INDEX IF NOT EXISTS tasks_created ON tasks(created_at);
       `);
     },
   },
